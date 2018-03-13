@@ -1,35 +1,18 @@
 class User < ApplicationRecord
-  validates :username, :session_token, :password_digest, presence: true
-  validates :password, length: { minimum: 6, allow_nil: true }
-  after_initialize :ensure_session_token
+  def create
 
-  has_many :goals
-
-  def self.find_by_credentials(username, password)
-    user = User.find_by(username: username)
-    user && user.is_password?(password) ? user : nil
-  end
-
-  attr_reader :password
-
-  def is_password?(password)
-    BCrypt::Password.new(self.password_digest).is_password?(password)
-  end
-
-  def password=(password)
-    @password = password
-    self.password_digest = BCrypt::Password.create(password)
-  end
-
-  def reset_session_token!
-    self.session_token = SecureRandom::urlsafe_base64
-    self.save
-    self.session_token
+    user = User.new(user_params)
+    if user.save
+       sign_in((user)
+      redirect_to links_url
+    else
+      flash[:errors] = user.errors.full_messagges
+      render :new
+    end
   end
 
   private
-
-  def ensure_session_token
-    self.session_token ||= SecureRandom::urlsafe_base64
+  def user_params
+    params.require(:user).permit(:username, :password)
   end
 end
